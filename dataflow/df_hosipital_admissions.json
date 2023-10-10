@@ -1,0 +1,217 @@
+{
+	"name": "df_hosipital_admissions",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_lake_hospital_admission",
+						"type": "DatasetReference"
+					},
+					"name": "sourceaddmission"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Lookup_countrycodes",
+						"type": "DatasetReference"
+					},
+					"name": "sourcelkpcountrycode"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_lookup_dim_date",
+						"type": "DatasetReference"
+					},
+					"name": "sourcelkpdatedim"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_lake_cases_death_Sink",
+						"type": "DatasetReference"
+					},
+					"name": "sinkdaily"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_lake_cases_death_Sink",
+						"type": "DatasetReference"
+					},
+					"name": "sinkweekly"
+				}
+			],
+			"transformations": [
+				{
+					"name": "selectsrcolumns"
+				},
+				{
+					"name": "filterUk"
+				},
+				{
+					"name": "pivotvalues"
+				},
+				{
+					"name": "split1"
+				},
+				{
+					"name": "pivot1"
+				},
+				{
+					"name": "lookupcountrycode"
+				},
+				{
+					"name": "lookupcontrycode"
+				},
+				{
+					"name": "lookupdates"
+				},
+				{
+					"name": "selectsinkdaily"
+				},
+				{
+					"name": "selectsinkweekly"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          country as string,",
+				"          indicator as string,",
+				"          date as date,",
+				"          year_week as string,",
+				"          value as double,",
+				"          source as string,",
+				"          url as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     limit: 9000,",
+				"     ignoreNoFilesFound: false) ~> sourceaddmission",
+				"source(output(",
+				"          country as string,",
+				"          country_code_2_digit as string,",
+				"          country_code_3_digit as string,",
+				"          continent as string,",
+				"          population as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourcelkpcountrycode",
+				"source(output(",
+				"          date_key as date,",
+				"          date as date,",
+				"          year as short,",
+				"          month as short,",
+				"          day as short,",
+				"          day_name as string,",
+				"          day_of_year as short,",
+				"          week_of_month as short,",
+				"          week_of_year as short,",
+				"          month_name as string,",
+				"          year_month as integer,",
+				"          year_week as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourcelkpdatedim",
+				"filterUk select(mapColumn(",
+				"          country,",
+				"          indicator,",
+				"          date,",
+				"          year_week,",
+				"          value,",
+				"          source",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectsrcolumns",
+				"sourceaddmission filter(country=='United Kingdom') ~> filterUk",
+				"split1@daily pivot(groupBy(country,",
+				"          date,",
+				"          source,",
+				"          year_week),",
+				"     pivotBy(indicator, ['Daily hospital occupancy', 'Daily ICU occupancy']),",
+				"     admission = sum(value),",
+				"     columnNaming: 'Count$N_$V',",
+				"     lateral: true) ~> pivotvalues",
+				"selectsrcolumns split(like(indicator, 'Daily%'),",
+				"     disjoint: false) ~> split1@(daily, weekly)",
+				"split1@weekly pivot(groupBy(country,",
+				"          date,",
+				"          year_week,",
+				"          source),",
+				"     pivotBy(indicator, ['Daily ICU occupancy', 'Daily hospital occupancy']),",
+				"     admission = sum(value),",
+				"     columnNaming: 'Count$N_$V',",
+				"     lateral: true) ~> pivot1",
+				"pivotvalues, sourcelkpcountrycode lookup(pivotvalues@country == sourcelkpcountrycode@country,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookupcountrycode",
+				"pivot1, sourcelkpcountrycode lookup(pivot1@country == sourcelkpcountrycode@country,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookupcontrycode",
+				"lookupcontrycode, sourcelkpdatedim lookup(substring(pivot1@year_week, 7, 2) == lpad(char(day_of_year),2,'0'),",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookupdates",
+				"lookupcountrycode select(mapColumn(",
+				"          country = pivotvalues@country,",
+				"          date,",
+				"          source,",
+				"          year_week,",
+				"          {Countadmission_Daily hospital occupancy},",
+				"          {Countadmission_Daily ICU occupancy},",
+				"          country = sourcelkpcountrycode@country,",
+				"          country_code_2_digit,",
+				"          country_code_3_digit,",
+				"          population",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectsinkdaily",
+				"lookupdates select(mapColumn(",
+				"          country = pivot1@country,",
+				"          date = pivot1@date,",
+				"          year_week = pivot1@year_week,",
+				"          source,",
+				"          {Countadmission_Daily ICU occupancy},",
+				"          {Countadmission_Daily hospital occupancy},",
+				"          country = sourcelkpcountrycode@country,",
+				"          country_code_2_digit,",
+				"          country_code_3_digit,",
+				"          continent,",
+				"          population,",
+				"          date_key,",
+				"          date = sourcelkpdatedim@date,",
+				"          year,",
+				"          day_name,",
+				"          day_of_year,",
+				"          week_of_month,",
+				"          week_of_year,",
+				"          month_name",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectsinkweekly",
+				"selectsinkdaily sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['dailyaddmision.csv'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sinkdaily",
+				"selectsinkweekly sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['admission_weekly.csv'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sinkweekly"
+			]
+		}
+	}
+}

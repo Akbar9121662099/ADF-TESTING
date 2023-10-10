@@ -1,0 +1,20 @@
+{
+	"name": "powerquery1",
+	"properties": {
+		"type": "WranglingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"name": "AzureSqlTable1",
+					"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> AzureSqlTable1",
+					"dataset": {
+						"referenceName": "AzureSqlTabletablename",
+						"type": "DatasetReference"
+					}
+				}
+			],
+			"script": "section Section1;\r\nshared AzureSqlTable1 = let AdfDoc = Sql.Database(\"mmakbar9369.database.windows.net\", \"sqldbammakbar\", [CreateNavigationProperties = false]), InputTable = AdfDoc{[Schema=\"covid_reporting\",Item=\"testing\"]}[Data],\r\n  #\"Choose columns\" = Table.SelectColumns(InputTable, {\"country\", \"country_code_2_digit\"}),\r\n  #\"Removed blank rows\" = Table.SelectRows(#\"Choose columns\", each not List.IsEmpty(List.RemoveMatchingItems(Record.FieldValues(_), {\"\", null}))),\r\n  #\"Removed duplicates\" = Table.Distinct(#\"Removed blank rows\", {\"country_code_2_digit\"}),\r\n  #\"Sorted rows\" = Table.Sort(#\"Removed duplicates\", {{\"country_code_2_digit\", Order.Ascending}}),\r\n  #\"Uppercased text\" = Table.TransformColumns(#\"Sorted rows\", {{\"country_code_2_digit\", each Text.Upper(_), type nullable text}}) in #\"Uppercased text\";\r\nshared UserQuery = let Source = #\"AzureSqlTable1\" in Source;\r\n",
+			"documentLocale": "en-us"
+		}
+	}
+}

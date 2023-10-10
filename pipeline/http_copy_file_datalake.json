@@ -1,0 +1,100 @@
+{
+	"name": "http_copy_file_datalake",
+	"properties": {
+		"activities": [
+			{
+				"name": "copy the file from https to data lake",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:10:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "HttpReadSettings",
+							"requestMethod": "GET"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings",
+							"copyBehavior": "FlattenHierarchy"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_https_death_files",
+						"type": "DatasetReference",
+						"parameters": {
+							"relativeurl": {
+								"value": "@variables('urldeath')",
+								"type": "Expression"
+							},
+							"baseurl": {
+								"value": "@variables('sourcebaseurl')",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "dath_file_datalake",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": {
+								"value": "@variables('filename')",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"variables": {
+			"urldeath": {
+				"type": "String",
+				"defaultValue": "cloudboxacademy/covid19/main/ecdc_data/cases_deaths.csv"
+			},
+			"filename": {
+				"type": "String",
+				"defaultValue": "death_file.csv"
+			},
+			"sinkFileName": {
+				"type": "String"
+			},
+			"sourcebaseurl": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-09-23T15:32:47Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

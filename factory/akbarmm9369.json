@@ -1,0 +1,20 @@
+{
+	"name": "akbarmm9369",
+	"properties": {
+		"globalParameters": {
+			"dbname_blob": {
+				"type": "string",
+				"value": "stroageacconturl"
+			}
+		},
+		"globalConfigurations": {
+			"PipelineBillingEnabled": "false"
+		}
+	},
+	"location": "uksouth",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "65b658da-4881-4db6-a4b3-f2985d91c325",
+		"tenantId": "43d59c8a-bcc2-408f-9520-3c06e2a20f52"
+	}
+}

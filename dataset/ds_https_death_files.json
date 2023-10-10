@@ -1,0 +1,40 @@
+{
+	"name": "ds_https_death_files",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_HttpServer1",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"sourcebaseurl": {
+					"value": "@dataset().baseurl",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"relativeurl": {
+				"type": "string"
+			},
+			"baseurl": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "HttpServerLocation",
+				"relativeUrl": {
+					"value": "@dataset().relativeurl",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
