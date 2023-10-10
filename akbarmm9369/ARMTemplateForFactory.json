@@ -917,6 +917,22 @@
 						"typeProperties": {
 							"waitTimeInSeconds": 10
 						}
+					},
+					{
+						"name": "Wait15",
+						"type": "Wait",
+						"dependsOn": [
+							{
+								"activity": "Wait5",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"waitTimeInSeconds": 15
+						}
 					}
 				],
 				"policy": {
