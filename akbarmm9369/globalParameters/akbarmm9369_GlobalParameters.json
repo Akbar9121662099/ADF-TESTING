@@ -1,0 +1,6 @@
+{
+	"dbname_blob": {
+		"type": "string",
+		"value": "stroageacconturl"
+	}
+}
